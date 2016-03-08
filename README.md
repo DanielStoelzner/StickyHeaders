@@ -1,2 +1,4 @@
 # StickyHeaders
-Sticky headers for SharePoint Lists
+Sticky headers for SharePoint lists
+
+Check http://spoodoo.com/products/stickyheaders-for-sharepoint/ for details!
