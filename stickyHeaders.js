@@ -4,13 +4,13 @@
  * stoelzner.daniel@gmail.com
  * http://spoodoo.com
  * Copyright (c) 2016 Daniel Stoelzner (Licensed under the MIT X11 License)
- * v3.0 for SharePoint 2013 and SharePoint Online
- * LastMod: 4th of March, 2016
+ * v3.0.1 for SharePoint 2013 and SharePoint Online
+ * LastMod: 16th of April, 2016
  * ---------------------------------------------
  * Include reference to:
  *  jquery - http://jquery.com
  * ---------------------------------------------
- * Add a reference to this file in a CEWP or Script Editor Web Part or reference the file in your masterpage
+ * Add a reference to this file in a CEWP or Script Editor Web Part or reference this file in your masterpage
  */
 
 jQuery(function () {
@@ -68,7 +68,7 @@ function stickyHeaders() {
 				if(jQuery(tbodId).attr("isloaded") == "true") {
 					setTimeout(function(){
 						var listData = jQuery(tbodId).closest("[id^=WebPartWPQ]").data("stickyHeaderData")
-						listData.firstRow = listData.list.find("tbody[isloaded=true]:has(>tr):visible > tr").first()
+						listData.firstRow = listData.list.find("tbody[isloaded=true]:visible > tr").first()
 						listData.setWidth()
 						listData.update()
 					},200)
@@ -80,23 +80,25 @@ function stickyHeaders() {
 	function List(list) {
 		this.list             = list
 		this.webpart          = jQuery(this.list.closest("div[id^=WebPartWPQ]")[0] || this.list[0])
+		this.webpartHeight    = null
 		this.fixedHeight      = ["","auto","100%"].indexOf(this.webpart.prop("style")["height"]) + 1 ? false : true
 		this.fixedWidth       = ["","auto","100%"].indexOf(this.webpart.prop("style")["width"])  + 1 ? false : true
 		this.s4OffsetTop      = 0
 		this.webpartOffsetTop = 0
 		this.stickyHeight     = 0
+		this.prevHeight       = 0
 		this.sticky           = null
 		this.firstRow         = null
-		this.prevHeight       = null
 		this.listType         = null
 		this.init = function() {
 			this.s4OffsetTop  = jQuery("#" + g_Workspace).offset().top
 			this.list         = jQuery.contains(document.documentElement, this.list[0]) ? jQuery(this.list) : jQuery(this.webpart.find(".ms-listviewtable").last()[0] || this.webpart.find("> table")[0])
 			this.listType     = this.list.find("tbody[id^=GroupByCol]").length ? "GroupedList" : this.list.hasClass('ms-listviewgrid') ? "Grid" : typeof this.list.closest("div[id^=WebPartWPQ]")[0] == "undefined" ? "SysList" : "NormalList"
-			this.firstRow     = (this.listType == "Grid" || this.listType == "SysList") ? this.list.find(">*>tr:nth-child(2), >tr:nth-child(2)") : this.listType == "GroupedList" ? this.list.find("tbody[isloaded=true]:has(>tr):visible > tr").first() : this.list.find("> tbody > tr:nth-child(1)")
+			this.firstRow     = (this.listType == "Grid" || this.listType == "SysList") ? this.list.find(">*>tr:nth-child(2), >tr:nth-child(2)") : this.listType == "GroupedList" ? this.list.find("tbody[isloaded=true]:visible > tr").first() : this.list.find("> tbody > tr:nth-child(1)")
 			this.prevHeight   = this.listType == "Grid" ? this.list.parent().closest(".ms-listviewtable")[0].offsetTop : this.list[0].offsetTop //little bug in Edge: value wrong after pagination
 			this.sticky       = this.webpart.find("tr:has(>th[class^='ms-vh']):visible").first()
 			this.stickyHeight = this.sticky.outerHeight()
+			this.webpartHeight= this.webpart.height()
 			this.list.css({"table-layout":"fixed", 
 						   "width"       :"auto"})
 			if(this.listType == "Grid"){
@@ -109,7 +111,7 @@ function stickyHeaders() {
 			this.setWidth()
 			this.update()
 		}
-		this.setWidth = throttleUpdates(50, false, function() {
+		this.setWidth = throttleUpdates(50, false, function(type) {
 			this.sticky.css({"position": "static", 
 							 "display" : "table-row"})
 			var stickyChildren   = this.sticky.children("th")
@@ -117,17 +119,21 @@ function stickyHeaders() {
 			jQuery.each([stickyChildren, firstRowChildren], function(){
 				jQuery(this).css("min-width", 0)
 			})
-			jQuery.each([stickyChildren, firstRowChildren], function(){
-				this.each(function(){
-					jQuery(this).css("min-width", jQuery(this).width())
-				})
-			})
+			var stickyChildrenWidths = [], firstRowChildrenWidths = []
+			for(i=0; i < stickyChildren.length; i++){
+				stickyChildrenWidths.push(jQuery(stickyChildren[i]).width())
+				firstRowChildrenWidths.push(jQuery(firstRowChildren[i]).width())
+			}
+			for(i=0; i < stickyChildren.length; i++){
+				jQuery(stickyChildren[i]).css("min-width",   stickyChildrenWidths[i])
+				jQuery(firstRowChildren[i]).css("min-width", firstRowChildrenWidths[i])
+			}
 			this.sticky.css("position", this.sticky.hasClass('stickyHeader') ? "fixed" : "static")
 		})
 		this.update = throttleUpdates(50, false, function() {
 			if(this.fixedWidth) return
 			this.webpartOffsetTop = this.webpart.offset().top
-			if(this.firstRow.length && (this.webpartOffsetTop + this.webpart.height() - this.s4OffsetTop > 0 && (this.webpartOffsetTop - this.s4OffsetTop + this.prevHeight < 0 || this.webpart.scrollTop() > this.prevHeight) && this.firstRow.length)){
+			if(this.firstRow.length && (this.webpartOffsetTop + this.webpartHeight - this.s4OffsetTop > 0 && (this.webpartOffsetTop - this.s4OffsetTop + this.prevHeight < 0 || this.webpart.scrollTop() > this.prevHeight))){
 				this.sticky.hasClass("stickyHeader") ? null : this.toggleSticky(true)
 				this.sticky.css({"left": this.webpart.offset().left,
 								 "top" : (!this.fixedHeight || this.webpartOffsetTop < (this.s4OffsetTop + 2)) ? (this.s4OffsetTop + 2) :  (this.webpartOffsetTop)})
@@ -136,15 +142,19 @@ function stickyHeaders() {
 			}
 		})
 		this.toggleSticky = function(mode){
-			var headerChildren = (this.listType == "GroupedList") ? this.list.find("tbody[id^=titl]").first().find("td") : this.firstRow.children("td")
-			var _stickyHeight = this.stickyHeight
-			headerChildren.each(function(){
-				jQuery(this).css("padding-top", parseInt(jQuery(this).css("padding-top")) + _stickyHeight * (mode == true ? 1 : -1))
-			})
+			if(this.listType == "SysList"){
+				var headerChildren = (this.listType == "GroupedList") ? this.list.find("tbody[id^=titl]").first().find("td") : this.firstRow.children("td")
+				var _stickyHeight = this.stickyHeight
+				headerChildren.each(function(){
+					jQuery(this).css("padding-top", parseInt(jQuery(this).css("padding-top")) + _stickyHeight * (mode == true ? 1 : -1))
+				})
+			} else {
+				mode ? this.list.css("padding-top", this.stickyHeight) : this.list.css("padding-top", 0)
+			}
 			this.sticky.css({"position": mode ? "fixed" : "static", 
 							 "display" : mode ? "none"  : "table-row"}).removeClass("sticky")
-			this.listType == "NormalList" ? (mode ? this.list.addClass("addPadding").fadeIn() : this.list.removeClass("addPadding")) : null
-			mode ? this.sticky.addClass("stickyHeader").fadeIn() : this.sticky.removeClass("stickyHeader")
+			this.listType == "NormalList" ? (mode ? this.list.addClass("addPadding").slideDown(200) : this.list.removeClass("addPadding")) : null
+			mode ? this.sticky.addClass("stickyHeader").slideDown(200) : this.sticky.removeClass("stickyHeader")
 		}
 	}
 	/*
