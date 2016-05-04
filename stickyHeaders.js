@@ -4,11 +4,10 @@
  * stoelzner.daniel@gmail.com
  * http://spoodoo.com
  * Copyright (c) 2016 Daniel Stoelzner (Licensed under the MIT X11 License)
- * v3.0.1 for SharePoint 2013 and SharePoint Online
- * LastMod: 16th of April, 2016
+ * v3.1.0 for SharePoint 2013 and SharePoint Online
+ * LastMod: 4th of May, 2016
  * ---------------------------------------------
- * Include reference to:
- *  jquery - http://jquery.com
+ * Dependencies: jquery - http://jquery.com
  * ---------------------------------------------
  * Add a reference to this file in a CEWP or Script Editor Web Part or reference this file in your masterpage
  */
@@ -22,19 +21,21 @@ jQuery(function () {
 });
 
 function stickyHeaders() {
-	listContainer = []
+	SHListContainer = []
 	function findListsAndAttachHandlers() {
 		jQuery("tr:has(>th[class^='ms-vh']):visible").closest("table").each(function(){
 			var list = new List(jQuery(this))
-			listContainer.push(list)
+			SHListContainer.push(list)
 			list.init()
 			list.webpart.data("stickyHeaderData",list)
-			jQuery("#" + g_Workspace).on("scroll.stickyeaders", {elem:list}, function (event) {
+			jQuery("#s4-workspace").on("scroll.stickyeaders", {elem:list}, function (event) {
 				event.data.elem.update()
 			})
 			jQuery(window).on("resize.stickyHeaders", {elem:list}, function (event) {
-				event.data.elem.setWidth()
-				event.data.elem.update()
+				setTimeout(function(){
+					event.data.elem.setWidth()
+					event.data.elem.update()
+				},50)
 			})
 			if(list.fixedHeight || list.fixedWidth){
 				list.webpart.on("scroll.stickyHeaders", {elem: list}, function(event){
@@ -53,8 +54,8 @@ function stickyHeaders() {
 		g_workspaceResizedHandlers.push(function () {
 			var newRibbonHeight = jQuery("#RibbonContainer").height()
 			if(ribbonHeight !== newRibbonHeight) {
-				jQuery(listContainer).each(function(){
-					this.s4OffsetTop = jQuery("#" + g_Workspace).offset().top
+				jQuery(SHListContainer).each(function(){
+					this.s4OffsetTop = jQuery("#s4-workspace").offset().top
 					this.update()
 				})
 				ribbonHeight = newRibbonHeight
@@ -63,14 +64,11 @@ function stickyHeaders() {
 		var ExpCollGroup_old = ExpCollGroup
 		ExpCollGroup = function (c, F, y, w) {
 			ExpCollGroup_old(c, F, y, w)
-			var tbodId = ("#tbod" + c + "_")
+			var element = ("#tbod" + c + "_, #titl" + c)
 			var interval = setInterval(function () {
-				if(jQuery(tbodId).attr("isloaded") == "true") {
+				if(jQuery(element).attr("isloaded") == "true" || typeof jQuery(element).attr("isloaded") == "undefined") {
 					setTimeout(function(){
-						var listData = jQuery(tbodId).closest("[id^=WebPartWPQ]").data("stickyHeaderData")
-						listData.firstRow = listData.list.find("tbody[isloaded=true]:visible > tr").first()
-						listData.setWidth()
-						listData.update()
+						jQuery(element).closest("[id^=WebPartWPQ]").data("stickyHeaderData").init()
 					},200)
 					clearInterval(interval)
 				}
@@ -80,27 +78,19 @@ function stickyHeaders() {
 	function List(list) {
 		this.list             = list
 		this.webpart          = jQuery(this.list.closest("div[id^=WebPartWPQ]")[0] || this.list[0])
-		this.webpartHeight    = null
 		this.fixedHeight      = ["","auto","100%"].indexOf(this.webpart.prop("style")["height"]) + 1 ? false : true
 		this.fixedWidth       = ["","auto","100%"].indexOf(this.webpart.prop("style")["width"])  + 1 ? false : true
-		this.s4OffsetTop      = 0
-		this.webpartOffsetTop = 0
-		this.stickyHeight     = 0
-		this.prevHeight       = 0
-		this.sticky           = null
-		this.firstRow         = null
-		this.listType         = null
 		this.init = function() {
-			this.s4OffsetTop  = jQuery("#" + g_Workspace).offset().top
+			this.s4OffsetTop  = jQuery("#s4-workspace").offset().top
 			this.list         = jQuery.contains(document.documentElement, this.list[0]) ? jQuery(this.list) : jQuery(this.webpart.find(".ms-listviewtable").last()[0] || this.webpart.find("> table")[0])
 			this.listType     = this.list.find("tbody[id^=GroupByCol]").length ? "GroupedList" : this.list.hasClass('ms-listviewgrid') ? "Grid" : typeof this.list.closest("div[id^=WebPartWPQ]")[0] == "undefined" ? "SysList" : "NormalList"
-			this.firstRow     = (this.listType == "Grid" || this.listType == "SysList") ? this.list.find(">*>tr:nth-child(2), >tr:nth-child(2)") : this.listType == "GroupedList" ? this.list.find("tbody[isloaded=true]:visible > tr").first() : this.list.find("> tbody > tr:nth-child(1)")
+			this.firstRow     = this.list.find("thead").length ? (this.listType == "GroupedList" ? this.list.find("tbody[isloaded=true]:visible > tr").first() : this.list.find("> tbody > tr:nth-child(1)")) : this.list.find("> tr:nth-child(2), > tbody > tr:nth-child(2)")
 			this.prevHeight   = this.listType == "Grid" ? this.list.parent().closest(".ms-listviewtable")[0].offsetTop : this.list[0].offsetTop //little bug in Edge: value wrong after pagination
 			this.sticky       = this.webpart.find("tr:has(>th[class^='ms-vh']):visible").first()
 			this.stickyHeight = this.sticky.outerHeight()
 			this.webpartHeight= this.webpart.height()
-			this.list.css({"table-layout":"fixed", 
-						   "width"       :"auto"})
+			if(this.listType == "Grid") this.list.css({"table-layout":"fixed",
+													   "width"       :"auto"})
 			if(this.listType == "Grid"){
 				jQuery("#spgridcontainer_" + this.webpart.attr("id").substr(7))[0].jsgrid.AttachEvent(SP.JsGrid.EventType.OnCellEditCompleted, (function(caller){
 					return function(){
@@ -108,6 +98,7 @@ function stickyHeaders() {
 					}
 				})(this));
 			}
+			if(this.sticky.find("th:last-child.ms-vh-icon:has(>span.ms-addcolumn-span)").hide().length) this.list.addClass("addPadding")
 			this.setWidth()
 			this.update()
 		}
@@ -134,11 +125,11 @@ function stickyHeaders() {
 			if(this.fixedWidth) return
 			this.webpartOffsetTop = this.webpart.offset().top
 			if(this.firstRow.length && (this.webpartOffsetTop + this.webpartHeight - this.s4OffsetTop > 0 && (this.webpartOffsetTop - this.s4OffsetTop + this.prevHeight < 0 || this.webpart.scrollTop() > this.prevHeight))){
-				this.sticky.hasClass("stickyHeader") ? null : this.toggleSticky(true)
+				if(!this.sticky.hasClass("stickyHeader")) this.toggleSticky(true)
 				this.sticky.css({"left": this.webpart.offset().left,
 								 "top" : (!this.fixedHeight || this.webpartOffsetTop < (this.s4OffsetTop + 2)) ? (this.s4OffsetTop + 2) :  (this.webpartOffsetTop)})
 			} else {
-				this.sticky.hasClass("stickyHeader") ? this.toggleSticky(false) : null
+				if(this.sticky.hasClass("stickyHeader")) this.toggleSticky(false)
 			}
 		})
 		this.toggleSticky = function(mode){
@@ -152,8 +143,7 @@ function stickyHeaders() {
 				mode ? this.list.css("padding-top", this.stickyHeight) : this.list.css("padding-top", 0)
 			}
 			this.sticky.css({"position": mode ? "fixed" : "static", 
-							 "display" : mode ? "none"  : "table-row"}).removeClass("sticky")
-			this.listType == "NormalList" ? (mode ? this.list.addClass("addPadding").slideDown(200) : this.list.removeClass("addPadding")) : null
+							 "display" : mode ? "none"  : "table-row"})
 			mode ? this.sticky.addClass("stickyHeader").slideDown(200) : this.sticky.removeClass("stickyHeader")
 		}
 	}
@@ -235,6 +225,9 @@ function stickyHeaders() {
 											".ms-listviewtable.addPadding {" +
 												"padding-right: 26px !important;" +
 											"}" +
+											//"th:last-child.ms-vh-icon:not([role]) {" +
+											//	"display: none;" +
+											//"}" +
 										"</style>"
 							}).appendTo("body")
 		}
