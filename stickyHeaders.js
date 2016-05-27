@@ -33,7 +33,8 @@ function stickyHeaders() {
 			});
 			jQuery(window).on("resize.stickyHeaders", {elem:list}, function (event) {
 				setTimeout(function(){
-					event.data.elem.setWidth().update();
+					event.data.elem.setWidth();
+					event.data.elem.update();
 				},50);
 			});
 			if(list.fixedHeight || list.fixedWidth){
@@ -114,7 +115,8 @@ function stickyHeaders() {
 			if(this.sticky.find("th:last-child.ms-vh-icon:has(>span.ms-addcolumn-span)").hide().length) {
 				this.list.addClass("addPadding");
 			}
-			this.setWidth().update();
+			this.setWidth()
+			this.update();
 		};
 		this.fixSortFunctionality = function(e){
 			if(jQuery(e.target).parents('.stickyHeader').length > 0){
@@ -135,7 +137,7 @@ function stickyHeaders() {
 				clvp.RefreshPagingEx("?" + params, true, null);
 			}
 		};
-		this.setWidth = throttleUpdates(50, false, function() {
+		this.setWidth = throttleUpdates(function() {
 			this.sticky.css({
 				"position": "static",
 				"display" : "table-row"
@@ -156,7 +158,7 @@ function stickyHeaders() {
 			}
 			this.sticky.css("position", this.sticky.hasClass('stickyHeader') ? "fixed" : "static")
 		});
-		this.update = throttleUpdates(50, false, function() {
+		this.update = throttleUpdates(function() {
 			if(this.fixedWidth) {
 				return;
 			}
@@ -213,7 +215,7 @@ function stickyHeaders() {
 			}
 			if(typeof _spWebPartComponents != "undefined" && Object.keys(_spWebPartComponents).length == 1) {
 				ExecuteOrDelayUntilScriptLoaded(function(){
-					ShowContextRibbonSections = (function fn(){
+					var ShowContextRibbonSections = (function fn(){
 						SP.Ribbon.WebPartComponent.registerWithPageManager({editable: true, isEditMode: false, allowWebPartAdder: false});
 						SP.Ribbon.WebPartComponent.get_instance().selectWebPart(jQuery("#MSOZoneCell_" + Object.keys(_spWebPartComponents))[0], true);
 						return fn
