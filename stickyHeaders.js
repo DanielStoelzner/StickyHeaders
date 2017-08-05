@@ -4,8 +4,8 @@
  * stoelzner.daniel@gmail.com
  * http://spoodoo.com
  * Copyright (c) 2017 Daniel Stoelzner (Licensed under the MIT X11 License)
- * v3.2.0 for SharePoint 2013 and SharePoint Online
- * LastMod: 19th of July, 2017
+ * v3.2.1 for SharePoint 2013 and SharePoint Online
+ * LastMod: 8th of August, 2017
  * ---------------------------------------------
  * Dependencies: jQuery - http://jquery.com
  * ---------------------------------------------
@@ -15,7 +15,7 @@
 /*
  * - Fixed a bug where Sticke Headers are not working in Datasheet-view when the user has less than Edit-permission
  * - Implemented a funtion that will load jQuery for you if it is not already loaded. No need to load jQuery via a separate script-tag any longer.
-	 NOTE: Uncomment line 23-29 and remove or comment out line 32-50 if you don't want this feature
+	 NOTE: Uncomment line 23-29 and remove or comment out line 32-52 if you don't want this feature
  * - Added some semicolons for a better minification
  */
   
@@ -39,11 +39,14 @@ function loadJQueryFirstOrExecuteDirectly(){
 	if(window.jQuery === undefined) {
 		var script = document.createElement("script");
 		script.type = "text/javascript";
+		document.getElementsByTagName("head")[0].appendChild(script);
+		script.src = "//code.jquery.com/jquery-3.2.1.min.js";
 		script.onload = function(){
 			stickyHeaders();
 		};
-		(document.getElementsByTagName("head")[0]).appendChild(script);
-		script.src = "//code.jquery.com/jquery-3.2.1.min.js";
+		script.onerror = function(){
+			SP.UI.Notify.addNotification("[StickyHeaders] Error: Couldn't load jQuery from " + script.src + "!", false);
+		};
 	} else {
 		stickyHeaders();
 	};
