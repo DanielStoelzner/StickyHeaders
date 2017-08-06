@@ -1,49 +1,34 @@
-/* Sticky headers for all Custom Lists, Document Libraries and administration lists
- * ---------------------------------------------
- * Created by Daniel Stoelzner
- * stoelzner.daniel@gmail.com
- * http://spoodoo.com
- * Copyright (c) 2017 Daniel Stoelzner (Licensed under the MIT X11 License)
+/* 
+ * Sticky headers for all classic lists and libraries
+ * 
+ * Author  : Daniel Stoelzner
+ * E-Mail  : daniel@spoodoo.com
+ * Website : http://spoodoo.com
+ * Copyright (c) 2017 Daniel Stoelzner 
+ * Licensed under the MIT X11 License
+ * 
  * v3.2.2BETA1 for SharePoint 2013 and SharePoint Online
  * LastMod: 6th of August 2017
- * ---------------------------------------------
+ * 
  * Dependencies: jQuery - http://jquery.com
- * ---------------------------------------------
- * Add a reference to this file in a CEWP or Script Editor Web Part or reference this file in your masterpage
- */
- 
-/*
- * - Fixed a bug where Sticke Headers are not working in Datasheet-view when the user has less than Edit-permission
- * - Implemented a funtion that will load jQuery for you if it is not already loaded. No need to load jQuery via a separate script-tag any longer.
-	 NOTE: Uncomment line 23-29 and remove or comment out line 32-50 if you don't want this feature
- * - Added some semicolons for a better minification
- */
-  
- /*
- jQuery(function () {
-	if(typeof asyncDeltaManager != "undefined"){
-		asyncDeltaManager.add_endRequest(stickyHeaders);
-	} else { 
-		stickyHeaders();
-	}
-});
  */
 
-if (typeof asyncDeltaManager != "undefined"){
-	asyncDeltaManager.add_endRequest(loadJQueryFirstOrExecuteDirectly);
+if ("undefined" != typeof g_MinimalDownload && g_MinimalDownload && (window.location.pathname.toLowerCase()).endsWith("/_layouts/15/start.aspx") && "undefined" != typeof asyncDeltaManager) {
+	RegisterModuleInit("/Style Library/Scripts/StickyHeaders.js", loadJQueryFirstOrExecuteDirectly);
+	loadJQueryFirstOrExecuteDirectly();
 } else {
 	loadJQueryFirstOrExecuteDirectly();
-};
+}
 
-function loadJQueryFirstOrExecuteDirectly(){
+function loadJQueryFirstOrExecuteDirectly() {
 	if(window.jQuery === undefined) {
+		var script = document.createElement("script");
 		script.onload = function(){
 			stickyHeaders();
 		};
 		script.onerror = function(){  
 			SP.UI.Notify.addNotification("[StickyHeaders] Error: Couldn't load jQuery from " + script.src + "!", false);  
-		};  
-		var script = document.createElement("script");
+		};
 		script.type = "text/javascript";
 		script.src = "//code.jquery.com/jquery-3.2.1.min.js";
 		document.getElementsByTagName("head")[0].appendChild(script);
@@ -229,7 +214,7 @@ function stickyHeaders() {
 	 * Throttle function extracted from:
 	 * http://benalman.com/projects/jquery-throttle-debounce-plugin/
 	 * Copyright (c) 2010 "Cowboy" Ben Alman
-	 * Dual licensed under the MIT and GPL licenses.
+	 * Dual licensed under the MIT and GPL licenses
 	 * http://benalman.com/about/license/
 	 */
 	function throttleUpdates(t,e){function u(){function e(){n=+new Date,t.apply(u,d)}var u=this,a=+new Date-n,d=arguments;i&&clearTimeout(i),a>r?e():i=setTimeout(e,r-a)}var i,n=0,r=50;return jQuery.guid&&(u.guid=t.guid=t.guid||jQuery.guid++),u}
