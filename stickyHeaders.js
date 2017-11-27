@@ -187,6 +187,8 @@ function stickyHeaders() {
 			for(var i=0; i < stickyChildren.length; i++){
 				jQuery(stickyChildren[i]).css("min-width",   stickyChildrenWidths[i]);
 				jQuery(firstRowChildren[i]).css("min-width", firstRowChildrenWidths[i]);
+				jQuery(stickyChildren[i]).css("max-width", stickyChildrenWidths[i]);
+                		jQuery(firstRowChildren[i]).css("max-width", firstRowChildrenWidths[i]);
 			};
 			this.sticky.css("position", this.sticky.hasClass("stickyHeader") ? "fixed" : "static")
 		});
